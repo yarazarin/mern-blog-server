@@ -1,4 +1,5 @@
-//server/routes/authRoutes.js
+// server/routes/authRoutes.js
+
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -15,7 +16,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'User not found' });
     }
 
-    const isMatch = await user.matchPassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid password' });
     }
@@ -26,6 +27,7 @@ router.post('/login', async (req, res) => {
 
     res.json({ token });
   } catch (err) {
+    console.error('Error during login:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
