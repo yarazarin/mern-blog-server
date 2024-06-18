@@ -1,23 +1,25 @@
+//server/middleware/upload.js
 const multer = require('multer');
 const path = require('path');
-const { Octokit } = require('@octokit/rest');
-const fs = require('fs');
-require('dotenv').config();
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const owner = 'yarazarin';
-const repo = 'mern-blog-server';
+// Set storage engine
+const storage = multer.diskStorage({
+  destination: './uploads/',
+  filename: function (req, file, cb) {
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+  }
+});
 
-const storage = multer.memoryStorage();
-
+// Initialize upload variable
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10000000 }, // Limit to 10MB
+  limits: { fileSize: 10000000 }, // Limit to 1MB
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   }
 }).single('image'); // Handle single file upload with field name 'image'
 
+// Check file type
 function checkFileType(file, cb) {
   const filetypes = /jpeg|jpg|png|gif/;
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
@@ -30,31 +32,4 @@ function checkFileType(file, cb) {
   }
 }
 
-async function uploadToGitHub(buffer, filename) {
-  const content = buffer.toString('base64');
-  const path = `uploads/${filename}`;
-
-  try {
-    const response = await octokit.repos.createOrUpdateFileContents({
-      owner,
-      repo,
-      path,
-      message: `Upload ${filename}`,
-      content,
-      committer: {
-        name: 'Your Name',
-        email: 'your-email@example.com'
-      },
-      author: {
-        name: 'Your Name',
-        email: 'your-email@example.com'
-      }
-    });
-    return response.data.content.download_url;
-  } catch (error) {
-    console.error('Error uploading to GitHub:', error);
-    throw error;
-  }
-}
-
-module.exports = { upload, uploadToGitHub };
+module.exports = upload;
