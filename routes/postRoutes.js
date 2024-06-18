@@ -14,13 +14,18 @@ router.post('/', auth, (req, res) => {
       return res.status(400).json({ message: err });
     } else {
       const { title, content } = req.body;
-      const image = req.file ? req.file.filename : '';
+      let imageUrl = '';
+
+      if (req.file) {
+        const filename = `${Date.now()}-${req.file.originalname}`;
+        imageUrl = await uploadToGitHub(req.file.buffer, filename);
+      }
 
       try {
         const newPost = new Post({
           title,
           content,
-          image,
+          image: imageUrl,
           author: req.user.id
         });
 
@@ -62,7 +67,12 @@ router.put('/:id', auth, (req, res) => {
       return res.status(400).json({ message: err });
     } else {
       const { title, content } = req.body;
-      const image = req.file ? req.file.filename : undefined;
+      let imageUrl = req.body.image;
+
+      if (req.file) {
+        const filename = `${Date.now()}-${req.file.originalname}`;
+        imageUrl = await uploadToGitHub(req.file.buffer, filename);
+      }
 
       try {
         const post = await Post.findById(req.params.id);
@@ -73,7 +83,7 @@ router.put('/:id', auth, (req, res) => {
 
         post.title = title || post.title;
         post.content = content || post.content;
-        if (image) post.image = image;
+        post.image = imageUrl;
 
         await post.save();
         res.json(post);
