@@ -1,5 +1,4 @@
-// server/app.js
-
+//server/app.js
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -21,7 +20,6 @@ app.use(
     ],
   })
 );
-app.use('/uploads', express.static('uploads'));
 
 mongoose
   .connect(process.env.MONGO_URI, {
