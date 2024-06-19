@@ -6,12 +6,13 @@ const Post = require('../models/Post');
 
 // Add a new post
 router.post('/', auth, async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, imageUrl } = req.body;
 
   try {
     const newPost = new Post({
       title,
       content,
+      imageUrl, // And here
       author: req.user.id
     });
 
@@ -45,7 +46,7 @@ router.get('/:id', async (req, res) => {
 
 // Update a post
 router.put('/:id', auth, async (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, imageUrl } = req.body;
 
   try {
     const post = await Post.findById(req.params.id);
@@ -56,6 +57,7 @@ router.put('/:id', auth, async (req, res) => {
 
     post.title = title || post.title;
     post.content = content || post.content;
+    post.imageUrl = imageUrl || post.imageUrl;
 
     await post.save();
     res.json(post);
