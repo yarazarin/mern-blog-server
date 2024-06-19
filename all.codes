@@ -1,3 +1,5 @@
+SERVER SIDE:
+
 // server/middleware/auth.js
 
 const jwt = require('jsonwebtoken');
@@ -23,55 +25,24 @@ const auth = (req, res, next) => {
 module.exports = auth;
 
 
-//server/middleware/upload.js
-const multer = require('multer');
-const path = require('path');
-
-// Set storage engine
-const storage = multer.diskStorage({
-  destination: './uploads/',
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
-});
-
-// Initialize upload variable
-const upload = multer({
-  storage: storage,
-  limits: { fileSize: 10000000 }, // Limit to 1MB
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  }
-}).single('image'); // Handle single file upload with field name 'image'
-
-// Check file type
-function checkFileType(file, cb) {
-  const filetypes = /jpeg|jpg|png|gif/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb('Error: Images Only!');
-  }
-}
-
-module.exports = upload;
-
 //server/models/Post.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const postSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
-  image: { type: String },
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  createdAt: { type: Date, default: Date.now }
+  imageUrl: {
+    type: String,
+    required: false,
+  },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Post = mongoose.model('Post', postSchema);
+const Post = mongoose.model("Post", postSchema);
 module.exports = Post;
+
+
 
 //server/models/User.js
 const mongoose = require('mongoose');
@@ -95,6 +66,7 @@ userSchema.methods.matchPassword = async function(enteredPassword) {
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
+
 
 // server/routes/authRoutes.js
 
@@ -138,36 +110,25 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Post = require('../models/Post');
-const upload = require('../middleware/upload');
-const path = require('path');
-const fs = require('fs');
 
 // Add a new post
-router.post('/', auth, (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err });
-    } else {
-      const { title, content } = req.body;
-      const image = req.file ? req.file.filename : '';
+router.post('/', auth, async (req, res) => {
+  const { title, content, imageUrl } = req.body;
 
-      try {
-        const newPost = new Post({
-          title,
-          content,
-          image,
-          author: req.user.id
-        });
+  try {
+    const newPost = new Post({
+      title,
+      content,
+      imageUrl, // And here
+      author: req.user.id
+    });
 
-        const post = await newPost.save();
-        res.status(201).json(post);
-      } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-      }
-    }
-  });
+    const post = await newPost.save();
+    res.status(201).json(post);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
-
 
 // Get all posts - public access
 router.get('/', async (req, res) => {
@@ -191,32 +152,25 @@ router.get('/:id', async (req, res) => {
 });
 
 // Update a post
-router.put('/:id', auth, (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err });
-    } else {
-      const { title, content } = req.body;
-      const image = req.file ? req.file.filename : undefined;
+router.put('/:id', auth, async (req, res) => {
+  const { title, content, imageUrl } = req.body;
 
-      try {
-        const post = await Post.findById(req.params.id);
+  try {
+    const post = await Post.findById(req.params.id);
 
-        if (!post) {
-          return res.status(404).json({ message: 'Post not found' });
-        }
-
-        post.title = title || post.title;
-        post.content = content || post.content;
-        if (image) post.image = image;
-
-        await post.save();
-        res.json(post);
-      } catch (err) {
-        res.status(500).json({ message: 'Server error' });
-      }
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
     }
-  });
+
+    post.title = title || post.title;
+    post.content = content || post.content;
+    post.imageUrl = imageUrl || post.imageUrl;
+
+    await post.save();
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // Delete a post
@@ -225,14 +179,7 @@ router.delete('/:id', auth, async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-    // Delete image file if it exists
-    if (post.image) {
-      const imagePath = path.join(__dirname, '..', 'uploads', post.image);
-      fs.unlinkSync(imagePath);
-    }
-
     await post.deleteOne();
-
     res.json({ message: 'Post removed' });
   } catch (err) {
     console.error('Error deleting post:', err);
@@ -242,13 +189,13 @@ router.delete('/:id', auth, async (req, res) => {
 
 module.exports = router;
 
+
 //SERVER/.env
 
-MONGO_URI=***
-JWT_SECRET=***
-ADMIN_USERNAME=***
-ADMIN_PASSWORD=***
-
+MONGO_URI=**
+JWT_SECRET=supersecretkey
+ADMIN_USERNAME=**
+ADMIN_PASSWORD=**
 
 //server/addUser.js
 const mongoose = require('mongoose');
@@ -280,8 +227,7 @@ async function createUser() {
 createUser();
 
 
-// server/app.js
-
+//server/app.js
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -303,7 +249,6 @@ app.use(
     ],
   })
 );
-app.use('/uploads', express.static('uploads'));
 
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -322,6 +267,7 @@ app.listen(PORT, () => {
 });
 
 
+SERVER/package.json
 
 {
   "name": "server",
@@ -336,6 +282,7 @@ app.listen(PORT, () => {
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@octokit/rest": "^20.1.1",
     "axios": "^1.7.2",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
@@ -352,5 +299,3 @@ app.listen(PORT, () => {
     "nodemon": "^3.1.0"
   }
 }
-
-
