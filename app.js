@@ -18,6 +18,7 @@ app.use(
       "http://localhost:3000",
       "https://yarazarin.github.io",
       "https://yarablog.netlify.app",
+      "https://itisyara.com",
     ],
   })
 );
