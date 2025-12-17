@@ -13,10 +13,11 @@ mongoose.connect(process.env.MONGO_URI, {
 
 const username = process.env.ADMIN_USERNAME;
 const password = process.env.ADMIN_PASSWORD;
+const email = process.env.ADMIN_EMAIL;
 
 async function createUser() {
   try {
-    const user = new User({ username, password });
+    const user = new User({ username, password, email, isEmailVerified: true });
     await user.save();
     console.log('User created successfully');
     mongoose.connection.close();
