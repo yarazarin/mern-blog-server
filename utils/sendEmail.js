@@ -1,6 +1,6 @@
 const sendEmail = async (to, subject, text) => {
   try {
-    // In production (Render), just log the email
+    // In production (Render), just log the email - no need for Gmail credentials
     if (process.env.NODE_ENV === 'production') {
       console.log('=== EMAIL SIMULATION ===');
       console.log('To:', to);
@@ -11,7 +11,18 @@ const sendEmail = async (to, subject, text) => {
       return;
     }
 
-    // In development, send real email
+    // In development, send real email if Gmail credentials are provided
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log('=== EMAIL SIMULATION (No Gmail credentials) ===');
+      console.log('To:', to);
+      console.log('Subject:', subject);
+      console.log('Text:', text);
+      console.log('Code:', text.match(/(\d{6})/)?.[1] || 'N/A');
+      console.log('========================');
+      return;
+    }
+
+    // Send real email in development
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
       service: 'gmail',
