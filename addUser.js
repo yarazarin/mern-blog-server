@@ -11,20 +11,28 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.log('MongoDB connection error:', err));
 
-const username = process.env.ADMIN_USERNAME;
-const password = process.env.ADMIN_PASSWORD;
+const username = process.env.EMAIL_USER;
+const password = process.env.EMAIL_PASS;
 const email = process.env.ADMIN_EMAIL;
 
-async function createUser() {
+async function createOrUpdateUser() {
   try {
-    const user = new User({ username, password, email, isEmailVerified: true });
-    await user.save();
-    console.log('User created successfully');
+    let user = await User.findOne({ username });
+    if (user) {
+      user.email = email;
+      user.isEmailVerified = true;
+      await user.save();
+      console.log('User updated successfully');
+    } else {
+      user = new User({ username, password, email, isEmailVerified: true });
+      await user.save();
+      console.log('User created successfully');
+    }
     mongoose.connection.close();
   } catch (err) {
-    console.error('Error creating user:', err);
+    console.error('Error:', err);
     mongoose.connection.close();
   }
 }
 
-createUser();
+createOrUpdateUser();
