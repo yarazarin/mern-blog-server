@@ -1,31 +1,31 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@octokit/rest": "^20.1.1",
-    "axios": "^1.7.2",
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.2",
-    "cloudinary": "^2.8.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "geoip-lite": "^1.4.10",
-    "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.3.5",
-    "multer": "^2.0.1",
-    "nodemailer": "^7.0.11"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
-  }
+    "name": "server",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js",
+        "dev": "nodemon app.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@octokit/rest": "^20.1.1",
+        "axios": "^1.7.2",
+        "bcryptjs": "^2.4.3",
+        "body-parser": "^1.20.2",
+        "cloudinary": "^2.8.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "geoip-lite": "^1.4.10",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.3.5",
+        "multer": "^2.0.1",
+        "nodemailer": "^7.0.11"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0"
+    }
 }
