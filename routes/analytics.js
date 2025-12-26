@@ -4,11 +4,22 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Get views per date
+// Get views per date (excluding current admin's IP)
 router.get('/views', auth, async (req, res) => {
   try {
     const { start, end } = req.query;
-    let match = {};
+
+    // Get current admin's IP to exclude
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+    let match = cleanAdminIp ? { ip: { $ne: cleanAdminIp } } : {};
 
     if (start && end) {
       match.date = { $gte: new Date(start), $lte: new Date(end) };
@@ -33,11 +44,22 @@ router.get('/views', auth, async (req, res) => {
   }
 });
 
-// Get country breakdown
+// Get country breakdown (excluding current admin's IP)
 router.get('/countries', auth, async (req, res) => {
   try {
     const { start, end } = req.query;
-    let match = { country: { $ne: null } };
+
+    // Get current admin's IP to exclude
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+    let match = cleanAdminIp ? { ip: { $ne: cleanAdminIp }, country: { $ne: null } } : { country: { $ne: null } };
 
     if (start && end) {
       match.date = { $gte: new Date(start), $lte: new Date(end) };
@@ -60,11 +82,22 @@ router.get('/countries', auth, async (req, res) => {
   }
 });
 
-// Get total views
+// Get total views (excluding current admin's IP)
 router.get('/total', auth, async (req, res) => {
   try {
     const { start, end } = req.query;
-    let match = {};
+
+    // Get current admin's IP to exclude
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+    let match = cleanAdminIp ? { ip: { $ne: cleanAdminIp } } : {};
 
     if (start && end) {
       match.date = { $gte: new Date(start), $lte: new Date(end) };
@@ -77,31 +110,58 @@ router.get('/total', auth, async (req, res) => {
   }
 });
 
-// Get recent visits
+// Get recent visits (excluding current admin's IP)
 router.get('/recent', auth, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
-    const visits = await Visit.find().sort({ date: -1 }).limit(limit).select('-_id ip country city date path');
+
+    // Get current admin's IP to exclude
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+    const query = cleanAdminIp ? { ip: { $ne: cleanAdminIp } } : {};
+
+    const visits = await Visit.find(query).sort({ date: -1 }).limit(limit).select('-_id ip country city date path');
     res.json(visits);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Get all visits with pagination
+// Get all visits with pagination (excluding current admin's IP)
 router.get('/all-visits', auth, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
 
-    const visits = await Visit.find()
+    // Get current admin's IP to exclude from results
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+
+    // Build query to exclude admin IP
+    const query = cleanAdminIp ? { ip: { $ne: cleanAdminIp } } : {};
+
+    const visits = await Visit.find(query)
       .sort({ date: -1 })
       .skip(skip)
       .limit(limit)
       .select('-_id ip country region city date path userAgent referrer');
 
-    const total = await Visit.countDocuments();
+    const total = await Visit.countDocuments(query);
     const totalPages = Math.ceil(total / limit);
 
     res.json({
