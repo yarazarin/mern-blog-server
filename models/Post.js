@@ -9,7 +9,8 @@ const postSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   tags: { type: [String], required: true },
   date: { type: Date, required: true },
-  addToManual: { type: Boolean, default: false }
+  addToManual: { type: Boolean, default: false },
+  viewCount: { type: Number, default: 0 }
 });
 
 const Post = mongoose.model("Post", postSchema);
