@@ -155,51 +155,31 @@ router.get('/devices', auth, async (req, res) => {
       match.date = { $gte: new Date(start), $lte: new Date(end) };
     }
 
-    const devices = await Visit.aggregate([
-      { $match: match },
-      {
-        $project: {
-          device: {
-            $cond: {
-              if: {
-                $or: [
-                  { $regexMatch: { input: '$userAgent', regex: 'Mobile|Android|iPhone' } }
-                ]
-              },
-              then: 'Mobile',
-              else: {
-                $cond: {
-                  if: {
-                    $or: [
-                      { $regexMatch: { input: '$userAgent', regex: 'Tablet|iPad' } }
-                    ]
-                  },
-                  then: 'Tablet',
-                  else: {
-                    $cond: {
-                      if: {
-                        $or: [
-                          { $regexMatch: { input: '$userAgent', regex: 'Windows|Mac|Linux' } }
-                        ]
-                      },
-                      then: 'Desktop',
-                      else: 'Other'
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        $group: {
-          _id: '$device',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } }
-    ]);
+    // Get visits with userAgent
+    const visits = await Visit.find(match).select('userAgent');
+
+    // Process device types in JavaScript
+    const deviceCounts = {};
+
+    visits.forEach(visit => {
+      const userAgent = visit.userAgent || '';
+      let device = 'Other';
+
+      if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+        device = 'Mobile';
+      } else if (userAgent.includes('Tablet') || userAgent.includes('iPad')) {
+        device = 'Tablet';
+      } else if (userAgent.includes('Windows') || userAgent.includes('Mac') || userAgent.includes('Linux')) {
+        device = 'Desktop';
+      }
+
+      deviceCounts[device] = (deviceCounts[device] || 0) + 1;
+    });
+
+    // Convert to array format expected by client
+    const devices = Object.entries(deviceCounts)
+      .map(([device, count]) => ({ _id: device, count }))
+      .sort((a, b) => b.count - a.count);
 
     res.json(devices);
   } catch (error) {
