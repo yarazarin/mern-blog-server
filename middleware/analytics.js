@@ -9,22 +9,34 @@ const logVisit = async (req, res, next) => {
     // Clean IP (remove ::ffff: for IPv4)
     let cleanIp = ip ? ip.replace(/^::ffff:/, '') : 'unknown';
 
-    // For testing localhost, use a test IP to see geolocation
-    if (cleanIp === '127.0.0.1' || cleanIp === '::1') {
-      cleanIp = '8.8.8.8'; // Google's DNS IP for testing
-    }
+    if (cleanIp !== 'unknown') {
+      let geo = null;
+      let displayCountry = null;
+      let displayRegion = null;
+      let displayCity = null;
 
-    if (cleanIp !== 'unknown' && (process.env.NODE_ENV === 'production' || (cleanIp !== '127.0.0.1' && cleanIp !== '::1'))) {
-      const geo = geoip.lookup(cleanIp);
+      if (cleanIp === '127.0.0.1' || cleanIp === '::1') {
+        // Localhost - use sample data for testing
+        displayCountry = 'Local Development';
+        displayRegion = 'Test';
+        displayCity = 'Test City';
+      } else {
+        geo = geoip.lookup(cleanIp);
+        displayCountry = geo ? geo.country : null;
+        displayRegion = geo ? geo.region : null;
+        displayCity = geo ? geo.city : null;
+      }
+
       const visit = new Visit({
         ip: cleanIp,
-        country: geo ? geo.country : null,
-        region: geo ? geo.region : null,
-        city: geo ? geo.city : null,
+        country: displayCountry,
+        region: displayRegion,
+        city: displayCity,
         userAgent: req.get('User-Agent'),
         path: req.path,
         referrer: req.get('Referrer'),
       });
+
       try {
         await visit.save();
       } catch (error) {
