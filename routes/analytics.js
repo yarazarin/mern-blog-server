@@ -88,4 +88,35 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
+// Get all visits with pagination
+router.get('/all-visits', auth, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const visits = await Visit.find()
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .select('-_id ip country region city date path userAgent referrer');
+
+    const total = await Visit.countDocuments();
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      visits,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalVisits: total,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

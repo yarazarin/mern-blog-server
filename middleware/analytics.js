@@ -7,7 +7,12 @@ const logVisit = async (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || (req.connection.socket ? req.connection.socket.remoteAddress : null);
 
     // Clean IP (remove ::ffff: for IPv4)
-    const cleanIp = ip ? ip.replace(/^::ffff:/, '') : 'unknown';
+    let cleanIp = ip ? ip.replace(/^::ffff:/, '') : 'unknown';
+
+    // For testing localhost, use a test IP to see geolocation
+    if (cleanIp === '127.0.0.1' || cleanIp === '::1') {
+      cleanIp = '8.8.8.8'; // Google's DNS IP for testing
+    }
 
     if (cleanIp !== 'unknown' && (process.env.NODE_ENV === 'production' || (cleanIp !== '127.0.0.1' && cleanIp !== '::1'))) {
       const geo = geoip.lookup(cleanIp);
