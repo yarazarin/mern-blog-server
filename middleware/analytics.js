@@ -9,7 +9,7 @@ const logVisit = async (req, res, next) => {
     // Clean IP (remove ::ffff: for IPv4)
     const cleanIp = ip ? ip.replace(/^::ffff:/, '') : 'unknown';
 
-    if (cleanIp !== 'unknown' && cleanIp !== '127.0.0.1' && cleanIp !== '::1') {
+    if (cleanIp !== 'unknown' && (process.env.NODE_ENV === 'production' || (cleanIp !== '127.0.0.1' && cleanIp !== '::1'))) {
       const geo = geoip.lookup(cleanIp);
       const visit = new Visit({
         ip: cleanIp,
