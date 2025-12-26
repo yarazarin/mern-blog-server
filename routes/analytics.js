@@ -134,6 +134,79 @@ router.get('/recent', auth, async (req, res) => {
   }
 });
 
+// Get device type breakdown (excluding current admin's IP)
+router.get('/devices', auth, async (req, res) => {
+  try {
+    const { start, end } = req.query;
+
+    // Get current admin's IP to exclude
+    const adminIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+                    req.headers['x-real-ip'] ||
+                    req.headers['x-client-ip'] ||
+                    req.ip ||
+                    req.connection.remoteAddress ||
+                    req.socket.remoteAddress ||
+                    (req.connection.socket ? req.connection.socket.remoteAddress : null);
+
+    const cleanAdminIp = adminIp ? adminIp.replace(/^::ffff:/, '') : null;
+    let match = cleanAdminIp ? { ip: { $ne: cleanAdminIp } } : {};
+
+    if (start && end) {
+      match.date = { $gte: new Date(start), $lte: new Date(end) };
+    }
+
+    const devices = await Visit.aggregate([
+      { $match: match },
+      {
+        $project: {
+          device: {
+            $cond: {
+              if: {
+                $or: [
+                  { $regexMatch: { input: '$userAgent', regex: 'Mobile|Android|iPhone' } }
+                ]
+              },
+              then: 'Mobile',
+              else: {
+                $cond: {
+                  if: {
+                    $or: [
+                      { $regexMatch: { input: '$userAgent', regex: 'Tablet|iPad' } }
+                    ]
+                  },
+                  then: 'Tablet',
+                  else: {
+                    $cond: {
+                      if: {
+                        $or: [
+                          { $regexMatch: { input: '$userAgent', regex: 'Windows|Mac|Linux' } }
+                        ]
+                      },
+                      then: 'Desktop',
+                      else: 'Other'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: '$device',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    res.json(devices);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get all visits with pagination (excluding current admin's IP)
 router.get('/all-visits', auth, async (req, res) => {
   try {
